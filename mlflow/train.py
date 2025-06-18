@@ -134,7 +134,7 @@ with mlflow.start_run():
 
     # Chargement des images à partir de répertoires
     train_ds = train_datagen.flow_from_directory(
-        directory = '../data/train',
+        directory = 'data/train',
         batch_size = 32,
         target_size = (224, 224),
         class_mode='categorical',
@@ -142,7 +142,7 @@ with mlflow.start_run():
         seed=123  
     )
     validation_ds = val_datagen.flow_from_directory(
-        directory='../data/train',
+        directory='data/train',
         batch_size=32,
         target_size=(224, 224),
         class_mode='categorical',
@@ -150,7 +150,7 @@ with mlflow.start_run():
         seed=123 
     )
     test_ds = train_datagen.flow_from_directory(
-        directory = '../data/test',
+        directory = 'data/test',
         batch_size = 32,
         target_size = (224, 224),
         class_mode='categorical'

@@ -13,9 +13,11 @@ Ce projet est une démonstration de bout-en-bout d'un pipeline MLOps :
 ---
 ## Fonctionnement de l'algorithme de Deep Learning
 
-L'entraînement du modèle s'appuie sur le transfert d'apprentissage avec MobileNetV2, un réseau de neurones convolutif pré-entraîné sur ImageNet. Ce modèle est particulièrement adapté à la classification d'images grâce à sa légèreté et son efficacité, tout en conservant de très bonnes performances sur des tâches de reconnaissance visuelle.
+L'entraînement du modèle s'appuie sur le transfert d'apprentissage avec MobileNetV2, un réseau de neurones convolutif pré-entraîné sur ImageNet. Ce modèle est  adapté à la classification d'images.
 
 Dans notre pipeline, MobileNetV2 est utilisé comme base gelée (les poids ne sont pas réentraînés), à laquelle on ajoute plusieurs couches denses pour adapter le modèle à la classification des 10 catégories de fruits. L'entraînement se fait sur des images prétraitées (redimensionnées, normalisées et augmentées) afin d'améliorer la robustesse du modèle. La fonction de perte utilisée est la cross-entropy catégorielle, adaptée à la classification multi-classes.
+
+En plus des parametres données à l'algorithme on peut aussi augmenter le nombre de fois que l'algo se lance pour améliorer ses performances (ici on a choisi 5: ligne 203)
 
 ### Pourquoi MobileNetV2 ?
 
