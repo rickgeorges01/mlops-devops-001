@@ -7,7 +7,7 @@ services:
       context: ./mlflow
     container_name: mlflow_server
     ports:
-      - "5000:5000"
+      - "5001:5000"
     volumes:
       - mlflow-data:/mlflow
     environment:
@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
     # Assure la sante du docker avant de lancer les autres services
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/2.0/mlflow/experiments/list"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
       interval: 10s
       timeout: 5s
       retries: 5
