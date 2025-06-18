@@ -1,0 +1,12 @@
+pandas
+tensorflow==2.15.0
+keras
+scikit-learn
+opencv-python-headless
+numpy
+mlflow==2.11.1
+matplotlib
+Pillow
+fastapi==0.95.2
+uvicorn==0.22.0
+python-multipart==0.0.6
