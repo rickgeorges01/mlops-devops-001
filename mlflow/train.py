@@ -99,53 +99,59 @@ warnings.filterwarnings('ignore')
 # ## ***test_datagen:***
 # 
 # ### ***`rescale=1./255:` Applies the same normalization to the test images as the training images. This ensures consistency in the data processing pipeline.***
+import mlflow
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import BatchNormalization, Dropout, Dense
+from tensorflow.keras.callbacks import EarlyStopping
 
+# Définir un nom d'expérience MLflow
+mlflow.set_experiment("Fruit-classification")
 
-# Créer/utiliser une expérience (= projet de recherche)
-mlflow.set_experiment("Fruit_Classification")
-
-
+# Démarrage d'un run MLflow pour suivre les logs/params/metrics
 with mlflow.start_run():
-        
-    rescale = 1./255
-    rotation_range=40
-    width_shift_range=0.1
-    height_shift_range=0.1
-    horizontal_flip=True
-    validation_split=0.2
+    print(" [STATUT] --> Initialisation de l'entraînement du modèle MobileNetV2...")
 
+    # Hyperparamètres du pré-traitement
+    rescale = 1. / 255
+    rotation_range = 40
+    width_shift_range = 0.1
+    height_shift_range = 0.1
+    horizontal_flip = True
+    validation_split = 0.2
+
+    print(" [INFO] --> Enregistrement des hyperparamètres dans MLflow...")
     mlflow.log_param("rescale", rescale)
     mlflow.log_param("rotation_range", rotation_range)
-    mlflow.log_param("width_shift_range", width_shift_range) 
+    mlflow.log_param("width_shift_range", width_shift_range)
     mlflow.log_param("height_shift_range", height_shift_range)
     mlflow.log_param("model_type", "MobileNetV2")
     mlflow.log_param("validation_split", validation_split)
 
+    #  Préparation des générateurs d'images avec augmentation pour l'entraînement
+    train_datagen = ImageDataGenerator(
+        rescale=rescale,
+        rotation_range=rotation_range,
+        width_shift_range=width_shift_range,
+        height_shift_range=height_shift_range,
+        horizontal_flip=horizontal_flip,
+        validation_split=validation_split
+    )
 
+    val_datagen = ImageDataGenerator(rescale=rescale, validation_split=validation_split)
+    test_datagen = ImageDataGenerator(rescale=rescale)
 
-    train_datagen = ImageDataGenerator(rescale = rescale, 
-                                rotation_range=rotation_range,
-                                width_shift_range=width_shift_range,
-                                height_shift_range=height_shift_range,
-                                horizontal_flip=horizontal_flip,
-                                validation_split=validation_split)
+    print(" [INFO] --> Chargement des images depuis les dossiers...")
 
-    val_datagen = ImageDataGenerator(rescale = rescale,
-                                    validation_split=validation_split)
-
-    test_datagen = ImageDataGenerator(rescale = rescale)
-
-
-
-
-    # Load The Train Images And Test Images
     train_ds = train_datagen.flow_from_directory(
-        directory = '../data/train',
-        batch_size = 32,
-        target_size = (224, 224),
+        directory='../data/train',
+        batch_size=32,
+        target_size=(224, 224),
         class_mode='categorical',
         subset="training",
-        seed=123  
+        seed=123
     )
 
     validation_ds = val_datagen.flow_from_directory(
@@ -154,84 +160,84 @@ with mlflow.start_run():
         target_size=(224, 224),
         class_mode='categorical',
         subset="validation",
-        seed=123 
+        seed=123
     )
 
-    test_ds = train_datagen.flow_from_directory(
-        directory = '../data/test',
-        batch_size = 32,
-        target_size = (224, 224),
+    test_ds = test_datagen.flow_from_directory(
+        directory='../data/test',
+        batch_size=32,
+        target_size=(224, 224),
         class_mode='categorical'
     )
 
-    # Model Building
+    print(" [INFO] --> Données d'entraînement, de validation et de test chargées.")
 
-    # Transfer Learning
-    # Load the pre-trained EfficientNetB4 model without the top classification layer
-    MobileNetV2_base = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224, 224, 3),pooling='avg')
+    # Construction du modèle basé sur MobileNetV2
+    print(" [STATUS] --> Construction du modèle MobileNetV2 avec fine-tuning...")
 
-    # Freeze the pre-trained base model layers
+    MobileNetV2_base = MobileNetV2(
+        weights='imagenet',
+        include_top=False,
+        input_shape=(224, 224, 3),
+        pooling='avg'
+    )
+    # Freeze des poids du modèle pré-entraîné
     MobileNetV2_base.trainable = False
 
+    model = Sequential([
+        MobileNetV2_base,
+        BatchNormalization(),
+        Dropout(0.35),
+        Dense(220, activation='relu'),
+        Dense(60, activation='relu'),
+        Dense(10, activation='softmax')
+    ])
 
-    # Build the model
-    model = Sequential()
-
-    # Add the pre-trained Xception base
-    model.add(MobileNetV2_base)
-
-    # Batch Normalization
-    model.add(BatchNormalization())
-
-    # Dropout Layer
-    model.add(Dropout(0.35))
-
-    # Add a dense layer with 120 units and ReLU activation function
-    model.add(Dense(220, activation='relu')) 
-
-    # Add a dense layer with 120 units and ReLU activation function
-    model.add(Dense(60, activation='relu'))
-
-    # Add the output layer with 1 unit and sigmoid activation function for binary classification
-    model.add(Dense(10, activation='softmax'))
-
-    # Check The Summary Of Model
+    print(" [INFO] --> Architecture du modèle :")
     model.summary()
 
-    # Compile The Model
+    # 🔧 Compilation
     base_learning_rate = 0.0001
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
-    loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
+        loss='categorical_crossentropy',
+        metrics=['accuracy']
+    )
 
+    print(" [METRICS] --> Modèle compilé. Entraînement en cours...")
 
-    # Model Training
-    
-    # Define the callback function
+    # ⏱️ Callback d'arrêt précoce pour éviter l'overfitting
     early_stopping = EarlyStopping(patience=10)
-    
-    history= model.fit(train_ds,
+
+    history = model.fit(
+        train_ds,
         validation_data=validation_ds,
         steps_per_epoch=len(train_ds),
-        epochs=5, 
+        epochs=5,
         callbacks=[early_stopping]
-)
+    )
 
+    print(" [STATUS] --> Entraînement terminé.")
 
-    # Récupérer accuracy, loss et precision sur train et val
-    train_accuracy = history.history['accuracy']
-    val_accuracy = history.history['val_accuracy']
+    # Récupération des dernières métriques
+    train_accuracy = history.history['accuracy'][-1]
+    val_accuracy = history.history['val_accuracy'][-1]
+    train_loss = history.history['loss'][-1]
+    val_loss = history.history['val_loss'][-1]
 
-    train_loss = history.history['loss']
-    val_loss = history.history['val_loss']
-    
-    mlflow.log_metric("train_accuracy", train_accuracy[-1])
-    mlflow.log_metric("val_accuracy", val_accuracy[-1])
-    mlflow.log_metric("train_loss", train_loss[-1])
-    mlflow.log_metric("val_loss", val_loss[-1])
+    print(f" [METRICS] --> Dernière métrique - Train Accuracy: {train_accuracy:.4f}")
+    print(f" [METRICS] --> Dernière métrique - Validation Accuracy: {val_accuracy:.4f}")
+    print(f" [METRICS] --> Dernière métrique - Train Loss: {train_loss:.4f}")
+    print(f" [METRICS] --> Dernière métrique - Validation Loss: {val_loss:.4f}")
 
-    
-    # Sauvegarder avec MLflow
+    mlflow.log_metric("train_accuracy", train_accuracy)
+    mlflow.log_metric("val_accuracy", val_accuracy)
+    mlflow.log_metric("train_loss", train_loss)
+    mlflow.log_metric("val_loss", val_loss)
+
+    # Sauvegarde du modèle avec MLflow
     model_path = "Fruit_Classification_model"
     mlflow.keras.log_model(model, model_path)
     mlflow.keras.save_model(model, model_path)
-    print(f"✅ Modèle sauvegardé dans: {model_path}")
+
+    print(f" [STATUS] --> Modèle sauvegardé dans : {model_path}")
