@@ -57,7 +57,7 @@
 
 # # **<p style="font-family:newtimeroman;font-size:150%;text-align:center;color:#690e11;">Import Libraries</p>**
 
-
+# Utilisation de la librarie TensorFlow et Keras pour la création de modèles de visualisation et de classification d'images.
 import pandas as pd
 import plotly.express as px
 import seaborn as sns
@@ -77,9 +77,7 @@ import numpy as np
 from pathlib import Path
 from keras.preprocessing.image import load_img
 import cv2
-# encode both columns label and variety
 from sklearn.preprocessing import LabelEncoder
-# ignore warnings   
 import warnings
 import mlflow
 import mlflow.keras
@@ -99,145 +97,129 @@ warnings.filterwarnings('ignore')
 # ## ***test_datagen:***
 # 
 # ### ***`rescale=1./255:` Applies the same normalization to the test images as the training images. This ensures consistency in the data processing pipeline.***
-import mlflow
-import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import BatchNormalization, Dropout, Dense
-from tensorflow.keras.callbacks import EarlyStopping
 
-# Définir un nom d'expérience MLflow
-mlflow.set_experiment("Fruit-classification")
+#Utilisation de MLflow pour le suivi des expériences de machine learning.
+# Créer/utiliser une expérience (= projet de recherche)
+mlflow.set_experiment("Fruit_Classification")
 
-# Démarrage d'un run MLflow pour suivre les logs/params/metrics
+
 with mlflow.start_run():
-    print(" [STATUT] --> Initialisation de l'entraînement du modèle MobileNetV2...")
+    
+    rescale = 1./255
+    rotation_range=40
+    width_shift_range=0.1
+    height_shift_range=0.1
+    horizontal_flip=True
+    validation_split=0.2
 
-    # Hyperparamètres du pré-traitement
-    rescale = 1. / 255
-    rotation_range = 40
-    width_shift_range = 0.1
-    height_shift_range = 0.1
-    horizontal_flip = True
-    validation_split = 0.2
-
-    print(" [INFO] --> Enregistrement des hyperparamètres dans MLflow...")
+    # Tracking des paramètres avec MLflow
     mlflow.log_param("rescale", rescale)
     mlflow.log_param("rotation_range", rotation_range)
-    mlflow.log_param("width_shift_range", width_shift_range)
+    mlflow.log_param("width_shift_range", width_shift_range) 
     mlflow.log_param("height_shift_range", height_shift_range)
     mlflow.log_param("model_type", "MobileNetV2")
     mlflow.log_param("validation_split", validation_split)
 
-    #  Préparation des générateurs d'images avec augmentation pour l'entraînement
-    train_datagen = ImageDataGenerator(
-        rescale=rescale,
-        rotation_range=rotation_range,
-        width_shift_range=width_shift_range,
-        height_shift_range=height_shift_range,
-        horizontal_flip=horizontal_flip,
-        validation_split=validation_split
-    )
+    train_datagen = ImageDataGenerator(rescale = rescale, 
+                                rotation_range=rotation_range,
+                                width_shift_range=width_shift_range,
+                                height_shift_range=height_shift_range,
+                                horizontal_flip=horizontal_flip,
+                                validation_split=validation_split)
 
-    val_datagen = ImageDataGenerator(rescale=rescale, validation_split=validation_split)
-    test_datagen = ImageDataGenerator(rescale=rescale)
+    val_datagen = ImageDataGenerator(rescale = rescale,
+                                    validation_split=validation_split)
+    test_datagen = ImageDataGenerator(rescale = rescale)
 
-    print(" [INFO] --> Chargement des images depuis les dossiers...")
 
+    # Chargement des images à partir de répertoires
     train_ds = train_datagen.flow_from_directory(
-        directory='../data/train',
-        batch_size=32,
-        target_size=(224, 224),
+        directory = '../data/train',
+        batch_size = 32,
+        target_size = (224, 224),
         class_mode='categorical',
         subset="training",
-        seed=123
+        seed=123  
     )
-
     validation_ds = val_datagen.flow_from_directory(
         directory='../data/train',
         batch_size=32,
         target_size=(224, 224),
         class_mode='categorical',
         subset="validation",
-        seed=123
+        seed=123 
     )
-
-    test_ds = test_datagen.flow_from_directory(
-        directory='../data/test',
-        batch_size=32,
-        target_size=(224, 224),
+    test_ds = train_datagen.flow_from_directory(
+        directory = '../data/test',
+        batch_size = 32,
+        target_size = (224, 224),
         class_mode='categorical'
     )
 
-    print(" [INFO] --> Données d'entraînement, de validation et de test chargées.")
-
-    # Construction du modèle basé sur MobileNetV2
-    print(" [STATUS] --> Construction du modèle MobileNetV2 avec fine-tuning...")
-
-    MobileNetV2_base = MobileNetV2(
-        weights='imagenet',
-        include_top=False,
-        input_shape=(224, 224, 3),
-        pooling='avg'
-    )
-    # Freeze des poids du modèle pré-entraîné
+    # Model Building
+    #Création d'un modèle de classification d'images en utilisant MobileNetV2 comme base pour le transfert learning.
+    MobileNetV2_base = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224, 224, 3),pooling='avg')
+    
+    # Geler les couches de la base pré-entraînée pour éviter qu'elles ne soient mises à jour pendant l'entraînement
     MobileNetV2_base.trainable = False
 
-    model = Sequential([
-        MobileNetV2_base,
-        BatchNormalization(),
-        Dropout(0.35),
-        Dense(220, activation='relu'),
-        Dense(60, activation='relu'),
-        Dense(10, activation='softmax')
-    ])
+    # Création du modèle séquentiel
+    model = Sequential()
 
-    print(" [INFO] --> Architecture du modèle :")
+    # Ajout de la base pré-entraînée MobileNetV2 au modèle
+    model.add(MobileNetV2_base)
+
+    # Normalisation des activations pour stabiliser l'apprentissage et accélérer la convergence.
+    model.add(BatchNormalization())
+
+    # Abandon de 35% des neurones pour éviter le sur-apprentissage.
+    model.add(Dropout(0.35))
+
+    # Ajout d'une couche dense avec 220 unités et une fonction d'activation ReLU
+    model.add(Dense(220, activation='relu'))
+
+    # Ajout d'une couche dense avec 120 unités et une fonction d'activation ReLU
+    model.add(Dense(60, activation='relu'))
+
+    # Ajout de la couche de sortie avec 10 unités et une fonction d'activation softmax pour la classification multi-classes
+    model.add(Dense(10, activation='softmax'))
+
+    # Vérification du résumé du modèle
     model.summary()
 
-    # 🔧 Compilation
+    # Compilation du modèle
     base_learning_rate = 0.0001
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
-        loss='categorical_crossentropy',
-        metrics=['accuracy']
-    )
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
+    loss='categorical_crossentropy', metrics=['accuracy'])
 
-    print(" [METRICS] --> Modèle compilé. Entraînement en cours...")
 
-    # ⏱️ Callback d'arrêt précoce pour éviter l'overfitting
+    # Entraînement du modèle
+    # Définition de la fonction de rappel
     early_stopping = EarlyStopping(patience=10)
-
-    history = model.fit(
-        train_ds,
+    
+    history= model.fit(train_ds,
         validation_data=validation_ds,
         steps_per_epoch=len(train_ds),
-        epochs=5,
+        epochs=5, 
         callbacks=[early_stopping]
-    )
+)
 
-    print(" [STATUS] --> Entraînement terminé.")
 
-    # Récupération des dernières métriques
-    train_accuracy = history.history['accuracy'][-1]
-    val_accuracy = history.history['val_accuracy'][-1]
-    train_loss = history.history['loss'][-1]
-    val_loss = history.history['val_loss'][-1]
+    # Récupération des métriques d'entraînement et de validation
+    train_accuracy = history.history['accuracy']
+    val_accuracy = history.history['val_accuracy']
 
-    print(f" [METRICS] --> Dernière métrique - Train Accuracy: {train_accuracy:.4f}")
-    print(f" [METRICS] --> Dernière métrique - Validation Accuracy: {val_accuracy:.4f}")
-    print(f" [METRICS] --> Dernière métrique - Train Loss: {train_loss:.4f}")
-    print(f" [METRICS] --> Dernière métrique - Validation Loss: {val_loss:.4f}")
+    train_loss = history.history['loss']
+    val_loss = history.history['val_loss']
+    
+    mlflow.log_metric("train_accuracy", train_accuracy[-1])
+    mlflow.log_metric("val_accuracy", val_accuracy[-1])
+    mlflow.log_metric("train_loss", train_loss[-1])
+    mlflow.log_metric("val_loss", val_loss[-1])
 
-    mlflow.log_metric("train_accuracy", train_accuracy)
-    mlflow.log_metric("val_accuracy", val_accuracy)
-    mlflow.log_metric("train_loss", train_loss)
-    mlflow.log_metric("val_loss", val_loss)
-
-    # Sauvegarde du modèle avec MLflow
+    
+    # Sauvegarder avec MLflow
     model_path = "Fruit_Classification_model"
     mlflow.keras.log_model(model, model_path)
     mlflow.keras.save_model(model, model_path)
-
-    print(f" [STATUS] --> Modèle sauvegardé dans : {model_path}")
+    print(f"✅ Modèle sauvegardé dans: {model_path}")

@@ -1,33 +1,35 @@
-import mlflow.keras
-from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+# Importation des bibliothèques nécessaires
+import mlflow.keras  
+from fastapi import FastAPI, UploadFile, File  
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse  
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
-import matplotlib.pyplot as plt
+from tensorflow.keras.preprocessing.image import load_img, img_to_array 
 from PIL import Image
 import io
-import numpy as np
 import os
 import shutil
 
+# Initialisation de l’application FastAPI
 app = FastAPI()
 
-UPLOAD_PATH = "uploaded_image.jpg"
-MODEL_PATH = "../mlflow/Fruit_Classification_model"  # chemin où train.py a sauvegardé le modèle
+# Chemins utilisés par l’application
+UPLOAD_PATH = "uploaded_image.jpg"  
+# Chemin du modèle MLflow (doit correspondre à celui utilisé dans train.py)
+MODEL_PATH = "../mlflow/Fruit_Classification_model" 
+
+# Chargement du modèle depuis MLflow (log_model utilisé dans train.py)
 loaded_model = mlflow.keras.load_model(MODEL_PATH)
 
-# (Optionnel) Stocker manuellement une métrique accuracy ici si vous ne la récupérez pas dynamiquement
-model_accuracy = 0.92  # à remplacer par un chargement réel ou via MLflow Tracking si nécessaire
 
-# Fonction pour prétraiter l'image avant la prédiction
+# Fonction de prétraitement : redimensionnement + normalisation de l’image
 def preprocess_image(image_path):
-    image = load_img(image_path, target_size=(224, 224))
-    image_array = img_to_array(image) / 255.0
-    image_array = np.expand_dims(image_array, axis=0)
+    image = load_img(image_path, target_size=(224, 224))  # Redimension
+    image_array = img_to_array(image) / 255.0  # Normalisation [0, 1]
+    image_array = np.expand_dims(image_array, axis=0)  # Conversion en batch (forme: (1, 224, 224, 3))
     return image_array
 
-# Route pour afficher la page d'accueil avec le formulaire de téléchargement
+# Page HTML basique pour uploader une image (on vous conseilles les images depuis le dossier data/predict qui sont prevues a cet effet)
 @app.get("/")
 def home():
     return HTMLResponse("""
@@ -42,34 +44,36 @@ def home():
     </html>
     """)
 
-# Route pour prédire la classe de l'image téléchargée
+# Endpoint de prédiction : reçoit une image et retourne une étiquette
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
+    # Vérifie si le fichier est une image supportée
     if not file.filename.endswith(("jpg", "jpeg", "png")):
         return JSONResponse(content={"error": "Fichier non supporté"}, status_code=400)
 
-    # Sauvegarder l'image
+    # Sauvegarde temporaire de l’image sur le disque
     with open(UPLOAD_PATH, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    label_dict = {'Apple': 0, 'Avocado': 1,'Banana': 2,'Cherry':3,'Kiwi':4,'Mango':5,'Orange':6,'Pineapple':7,'Strawberry':8,'Watermelon':9}
+    # Dictionnaire d’étiquettes : classes des fruits
+    label_dict = {'Apple': 0, 'Avocado': 1, 'Banana': 2, 'Cherry': 3, 'Kiwi': 4, 'Mango': 5,
+                  'Orange': 6, 'Pineapple': 7, 'Strawberry': 8, 'Watermelon': 9}
     index_to_label = {v: k for k, v in label_dict.items()}
 
     try:
-     input_image = preprocess_image(UPLOAD_PATH)
-     prediction = loaded_model.predict(input_image)
-     predicted_class = int(np.argmax(prediction))  # Index prédite
+        # Prétraitement de l’image + prédiction
+        input_image = preprocess_image(UPLOAD_PATH)
+        prediction = loaded_model.predict(input_image)
 
-     predicted_label = index_to_label[predicted_class]
+        predicted_class = int(np.argmax(prediction))  # Classe avec la plus haute probabilité
+        predicted_label = index_to_label[predicted_class]  # Conversion en label texte
 
-     return JSONResponse(content={
-         "label": predicted_label
-     })
+        return JSONResponse(content={"label": predicted_label})
 
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-# Route pour afficher l'image téléchargée
+# Endpoint pour visualiser l’image uploadée
 @app.get("/image")
 def get_image():
     if os.path.exists(UPLOAD_PATH):
