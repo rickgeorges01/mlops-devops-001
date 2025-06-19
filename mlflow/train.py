@@ -119,6 +119,8 @@ with mlflow.start_run():
 
     val_datagen = ImageDataGenerator(rescale = rescale,
                                     validation_split=validation_split)
+
+    # TODO : A quoi est ce que ça nous sert ?
     test_datagen = ImageDataGenerator(rescale = rescale)
 
 
@@ -147,7 +149,7 @@ with mlflow.start_run():
     )
 
     # Model Building
-    #Création d'un modèle de classification d'images en utilisant MobileNetV2 comme base pour le transfert learning.
+    # -- Création d'un modèle de classification d'images en utilisant MobileNetV2 comme base pour le transfert learning.
     MobileNetV2_base = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224, 224, 3),pooling='avg')
     
     # Geler les couches de la base pré-entraînée pour éviter qu'elles ne soient mises à jour pendant l'entraînement

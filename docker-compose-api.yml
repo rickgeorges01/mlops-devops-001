@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # Service MLflow Server
+  mlflow:
+    build:
+      context: ./mlflow
+    container_name: mlflow_server
+    ports:
+      - "5001:5000"
+    volumes:
+      - mlflow-data:/mlflow
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: mlflow server --host 0.0.0.0 --port 5000
+    networks:
+      - ml-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Service API
+  api:
+    build:
+      context: ./api
+    container_name: ml_api
+    ports:
+      - "8000:8000"
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000  # MLflow local (reseau docker)
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    networks:
+      - ml-network
+    restart: unless-stopped
+
+volumes:
+  mlflow-data:
+
+networks:
+  ml-network:
+    driver: bridge

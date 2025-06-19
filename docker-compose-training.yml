@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # Service Training
+  training:
+    build:
+      context: ./mlflow
+    container_name: ml_trainer
+    volumes:
+      - ./data:/app/data
+    environment:
+      - MLFLOW_TRACKING_URI=${API_INSTANCE_IP}:5001  # MLflow DISTANT
+      - PYTHONUNBUFFERED=1
+    networks:
+      - ml-network
+    # Commande modifiée pour contrôle manuel
+    # - Garde le container vivant
+    command: tail -f /dev/null
+
+networks:
+  ml-network:
+    driver: bridge
