@@ -58,9 +58,6 @@
 # # **<p style="font-family:newtimeroman;font-size:150%;text-align:center;color:#690e11;">Import Libraries</p>**
 
 # Utilisation de la librarie TensorFlow et Keras pour la création de modèles de visualisation et de classification d'images.
-import pandas as pd
-import plotly.express as px
-import seaborn as sns
 import tensorflow as tf
 from tensorflow import keras
 from keras import Sequential
@@ -71,12 +68,8 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.applications import MobileNetV2
 import os
-import matplotlib.pyplot as plt
 import random
-import numpy as np
-from pathlib import Path
 from keras.preprocessing.image import load_img
-import cv2
 from sklearn.preprocessing import LabelEncoder
 import warnings
 import mlflow
@@ -219,7 +212,7 @@ with mlflow.start_run():
 
     
     # Sauvegarder avec MLflow
-    model_path = "Fruit_Classification_model"
-    mlflow.keras.log_model(model, model_path)
+    model_path = "mlflow/Fruit_Classification_model"
+    mlflow.keras.log_model(model, "Fruit_Classification_model")
     mlflow.keras.save_model(model, model_path)
     print(f"✅ Modèle sauvegardé dans: {model_path}")
