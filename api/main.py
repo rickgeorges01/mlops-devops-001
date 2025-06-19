@@ -24,6 +24,7 @@ UPLOAD_PATH = "uploaded_image.jpg"
 # Chargement depuis MLflow Registry
 MODEL_NAME = "Fruit_Classification_model"
 MODEL_VERSION = "Version 1"
+
 print(f" Connexion à MLflow : {MLFLOW_URI}")
 print(f" Chargement du modèle : {MODEL_NAME}/{MODEL_VERSION}")
 
