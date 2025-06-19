@@ -1,24 +1,21 @@
 #!/usr/bin/env python
-# coding: utf-8
 
+# About Author
+# Project:` Fruit Classification Multiclass Problem
+# Introduction
+# 👋 Hello, everyone! My name is Mehak Iftikhar, and I'm delighted to introduce myself to you. I am a Junior Data Scientist passionate about leveraging data to derive meaningful insights and drive impactful decisions. With a keen interest in exploring the realms of data science, I actively engage in various projects and share my learnings through platforms like Kaggle.
 # 
-
-# # <p style="font-family:newtimeroman;font-size:150%;text-align:center;color:#690e11;">About Author</p>
-# ## - ***`Project:` Fruit Classification Multiclass Problem***
-# #### **<h1 align="center"><span style="color:#690e11;">Introduction</span>**
-# ### ***👋 Hello, everyone! My name is Mehak Iftikhar, and I'm delighted to introduce myself to you. I am a Junior Data Scientist passionate about leveraging data to derive meaningful insights and drive impactful decisions. With a keen interest in exploring the realms of data science, I actively engage in various projects and share my learnings through platforms like Kaggle.***
+# About Me
+# 🔍 As a Junior Data Scientist, I immerse myself in the world of data, constantly seeking innovative ways to analyze, interpret, and visualize information to solve real-world problems. My journey in data science is fueled by a curiosity to unravel patterns, discover trends, and uncover hidden insights within complex datasets
 # 
-# #### **<h1 align="center"><span style="color:#690e11;">About Me</span>**
-# ### ***🔍 As a Junior Data Scientist, I immerse myself in the world of data, constantly seeking innovative ways to analyze, interpret, and visualize information to solve real-world problems. My journey in data science is fueled by a curiosity to unravel patterns, discover trends, and uncover hidden insights within complex datasets.***
+# My Work
+# 📊 I regularly upload my data analysis notebooks and projects on Kaggle, where I showcase my skills in data manipulation, exploratory data analysis (EDA), machine learning, and more. Through these notebooks, I aim to contribute to the data science community by sharing methodologies, code snippets, and insights gained from my projects.
 # 
-# #### **<h1 align="center"><span style="color:#690e11;">My Work</span>**
-# ### ***📊 I regularly upload my data analysis notebooks and projects on Kaggle, where I showcase my skills in data manipulation, exploratory data analysis (EDA), machine learning, and more. Through these notebooks, I aim to contribute to the data science community by sharing methodologies, code snippets, and insights gained from my projects.***
+# Passion & Goals
+# 💡 My passion for data science extends beyond technical skills. I am dedicated to continuous learning and improvement, staying updated with the latest advancements in the field. My ultimate goal is to harness the power of data to make a positive impact on society, whether it's through enhancing business strategies, addressing societal challenges, or driving innovation in various domains.
 # 
-# #### **<h1 align="center"><span style="color:#690e11;">Passion & Goals</span>**
-# ### ***💡 My passion for data science extends beyond technical skills. I am dedicated to continuous learning and improvement, staying updated with the latest advancements in the field. My ultimate goal is to harness the power of data to make a positive impact on society, whether it's through enhancing business strategies, addressing societal challenges, or driving innovation in various domains.***
-# 
-# #### **<h1 align="center"><span style="color:#690e11;">Let's Connect</span>**
-# ### ***🤝 I am always open to collaboration, knowledge sharing, and networking opportunities. Feel free to connect with me on Kaggle or other professional platforms to discuss data science, share ideas, or explore potential collaborations.***
+# Let's Connect
+# 🤝 I am always open to collaboration, knowledge sharing, and networking opportunities. Feel free to connect with me on Kaggle or other professional platforms to discuss data science, share ideas, or explore potential collaborations.
 # 
 # 
 # #### **<h1 align="center"><span style="color:#690e11;">Contact Info</span>**
@@ -193,7 +190,7 @@ with mlflow.start_run():
     history= model.fit(train_ds,
         validation_data=validation_ds,
         steps_per_epoch=len(train_ds),
-        epochs=5, 
+        epochs=2, 
         callbacks=[early_stopping]
 )
 
@@ -213,6 +210,6 @@ with mlflow.start_run():
     
     # Sauvegarder avec MLflow
     model_path = "mlflow/Fruit_Classification_model"
-    mlflow.keras.log_model(model, "Fruit_Classification_model")
+    mlflow.keras.log_model(model, "Fruit_Classification_model", registered_model_name="Fruit_Classification_model")
     mlflow.keras.save_model(model, model_path)
     print(f"✅ Modèle sauvegardé dans: {model_path}")
