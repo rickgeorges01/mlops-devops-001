@@ -22,14 +22,14 @@ mlflow.set_tracking_uri(MLFLOW_URI)
 UPLOAD_PATH = "uploaded_image.jpg"
 
 # Chargement depuis MLflow Registry
-MODEL_NAME = "Fruit_Classification"
-
+MODEL_NAME = "Fruit_Classification_model"
+MODEL_VERSION = "Version 1"
 print(f" Connexion à MLflow : {MLFLOW_URI}")
-print(f" Chargement du modèle : {MODEL_NAME}")
+print(f" Chargement du modèle : {MODEL_NAME}/{MODEL_VERSION}")
 
 try:
     # Chargement du modèle depuis MLflow Registry
-    model_uri = f"models:/{MODEL_NAME}"
+    model_uri = f"models:/{MODEL_NAME}/{MODEL_VERSION}"
     loaded_model = mlflow.keras.load_model(model_uri)
     print(" Modèle chargé avec succès depuis MLflow Registry")
 except Exception as e:

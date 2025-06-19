@@ -213,6 +213,6 @@ with mlflow.start_run():
     
     # Sauvegarder avec MLflow
     model_path = "mlflow/Fruit_Classification_model"
-    mlflow.keras.log_model(model, "Fruit_Classification_model")
+    mlflow.keras.log_model(model, "Fruit_Classification_model", registered_model_name="Fruit_Classification_model")
     mlflow.keras.save_model(model, model_path)
-    print(f"✅ Modèle sauvegardé dans: {model_path}")
+    print(f"Modèle sauvegardé dans: {model_path}")
