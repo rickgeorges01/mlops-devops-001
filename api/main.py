@@ -14,28 +14,33 @@ import shutil
 # Initialisation de l'application FastAPI
 app = FastAPI()
 
-# Configuration MLflow - CORRECTION MAJEURE !
-MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+# Configuration MLflow
+MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
 mlflow.set_tracking_uri(MLFLOW_URI)
 
 # Chemins utilisés par l'application
 UPLOAD_PATH = "uploaded_image.jpg"
 
-# Chargement depuis MLflow Registry
+# Variables globales
 MODEL_NAME = "Fruit_Classification_model"
-MODEL_VERSION = "Version 1"
+MODEL_VERSION = "1"
+loaded_model = None
 
-print(f" Connexion à MLflow : {MLFLOW_URI}")
-print(f" Chargement du modèle : {MODEL_NAME}/{MODEL_VERSION}")
 
-try:
-    # Chargement du modèle depuis MLflow Registry
-    model_uri = f"models:/{MODEL_NAME}/{MODEL_VERSION}"
-    loaded_model = mlflow.keras.load_model(model_uri)
-    print(" Modèle chargé avec succès depuis MLflow Registry")
-except Exception as e:
-    print(f"Erreur lors du chargement du modèle : {e}")
-    loaded_model = None
+def get_model():
+    """Charge le modèle à la demande (lazy loading)"""
+    global loaded_model
+
+    if loaded_model is None:
+        try:
+            model_uri = f"models:/{MODEL_NAME}/{MODEL_VERSION}"
+            loaded_model = mlflow.keras.load_model(model_uri)
+            print("Modèle chargé avec succès depuis MLflow Registry")
+        except Exception as e:
+            print(f"Erreur lors du chargement du modèle: {e}")
+            return None
+
+    return loaded_model
 
 
 # Fonction de prétraitement : redimensionnement + normalisation de l'image
@@ -54,18 +59,18 @@ def preprocess_image(image_path):
 @app.get("/")
 def home():
     """Page d'accueil avec formulaire d'upload"""
-    model_status = " Connecté" if loaded_model is not None else "Erreur"
+    model_status = "Connecté" if get_model() is not None else "Erreur"
 
     return HTMLResponse(f"""
     <html>
         <body>
-            <h2> Classificateur de Fruits</h2>
+            <h2>Classificateur de Fruits</h2>
             <p><strong>Status du modèle :</strong> {model_status}</p>
             <p><strong>MLflow URI :</strong> {MLFLOW_URI}</p>
 
             <form action="/predict" enctype="multipart/form-data" method="post">
                 <input name="file" type="file" accept="image/*">
-                <input type="submit" value=" Prédire">
+                <input type="submit" value="Prédire">
             </form>
 
             <hr>
@@ -80,8 +85,9 @@ def home():
 async def predict(file: UploadFile = File(...)):
     """Endpoint principal pour la prédiction d'images"""
 
-    # Vérification du modèle
-    if loaded_model is None:
+    # Chargement à la demande
+    model = get_model()
+    if model is None:
         return JSONResponse(
             content={"error": "Modele indisponible. Verifiez la connexion MLflow."},
             status_code=500
@@ -108,7 +114,7 @@ async def predict(file: UploadFile = File(...)):
 
         # Prétraitement de l'image + prédiction
         input_image = preprocess_image(UPLOAD_PATH)
-        prediction = loaded_model.predict(input_image)
+        prediction = model.predict(input_image)
 
         # Classe avec la plus haute probabilité
         predicted_class = int(np.argmax(prediction))
@@ -154,7 +160,9 @@ def get_image():
 def health_check():
     """Endpoint de monitoring pour vérifier l'état du service"""
     return JSONResponse(content={
-        "status": "healthy" if loaded_model is not None else "unhealthy",
+        "status": "healthy" if get_model() is not None else "unhealthy",
         "mlflow_uri": MLFLOW_URI,
-        "model_loaded": loaded_model is not None
+        "model_loaded": get_model() is not None
     })
+
+
