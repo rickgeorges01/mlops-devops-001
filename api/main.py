@@ -22,7 +22,7 @@ mlflow.set_tracking_uri(MLFLOW_URI)
 UPLOAD_PATH = "uploaded_image.jpg"
 
 # Chargement depuis MLflow Registry
-MODEL_NAME = "Fruit_Classification_model"
+MODEL_NAME = "Fruit_Classification"
 
 print(f" Connexion à MLflow : {MLFLOW_URI}")
 print(f" Chargement du modèle : {MODEL_NAME}")
@@ -82,7 +82,7 @@ async def predict(file: UploadFile = File(...)):
     # Vérification du modèle
     if loaded_model is None:
         return JSONResponse(
-            content={"error": "Modèle non disponible. Vérifiez la connexion MLflow."},
+            content={"error": "Modele indisponible. Verifiez la connexion MLflow."},
             status_code=500
         )
 
